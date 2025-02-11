@@ -1,0 +1,6 @@
+datasets
+requests
+tqdm
+tiktoken
+transformers_stream_generator
+gradio
