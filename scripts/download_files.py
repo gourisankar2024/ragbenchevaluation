@@ -2,23 +2,32 @@ import os
 import requests
 from tqdm import tqdm
 
+# Define constants for your folder and URLs
+LOCAL_SAVE_PATH = "data"  # Path where files will be saved
 GITHUB_API_URL = "https://api.github.com/repos/chen700564/RGB/contents/data"
 RAW_BASE_URL = "https://raw.githubusercontent.com/chen700564/RGB/master/data/"
-LOCAL_SAVE_PATH = "data"
-
-os.makedirs(LOCAL_SAVE_PATH, exist_ok=True)
 
 def get_file_list():
     """Fetch the list of files from the GitHub repository."""
     response = requests.get(GITHUB_API_URL)
     if response.status_code == 200:
+        # Filter files starting with "en" and return their names
         return [file["name"] for file in response.json() if file["name"].startswith("en")]
     else:
         print("Failed to fetch file list:", response.text)
         return []
 
+def file_exists_in_local_directory(file_name):
+    """Check if a file with the given name exists in the local directory."""
+    local_file_path = os.path.join(LOCAL_SAVE_PATH, file_name)
+    return os.path.exists(local_file_path)
+
 def download_file(file_name):
-    """Download a single file and save it locally."""
+    """Download a file if it doesn't exist locally."""
+    if file_exists_in_local_directory(file_name):
+        print(f"File already exists: {file_name}. Skipping download.")
+        return
+
     file_url = RAW_BASE_URL + file_name
     local_file_path = os.path.join(LOCAL_SAVE_PATH, file_name)
 

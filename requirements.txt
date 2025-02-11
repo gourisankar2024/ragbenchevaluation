@@ -3,4 +3,5 @@ requests
 tqdm
 tiktoken
 transformers_stream_generator
+numpy
 gradio
