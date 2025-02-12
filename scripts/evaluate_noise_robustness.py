@@ -1,32 +1,17 @@
 import os
 import json
-import time
 import logging
+from scripts.helper import adaptive_delay, ensure_directory_exists
 from scripts.process_data import process_data
 from scripts.groq_client import GroqClient
 from scripts.prediction import predict
 
-
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Helper function to ensure directory exists
-def ensure_directory_exists(filepath):
-    """Ensure the directory for a given file path exists."""
-    directory = os.path.dirname(filepath)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-# Helper function for adaptive delay
-def adaptive_delay(attempt, max_delay=60):
-    """Increase wait time with each retry."""
-    delay = min(5 * attempt, max_delay)  # Max delay of max_delay seconds
-    logging.info(f"Retrying after {delay} seconds...")
-    time.sleep(delay)
-
 # Improved function to evaluate noise robustness
 def evaluate_noise_robustness(dataset, config):
-    result_path = config["result_path"]
+    result_path = config["result_path"] + 'Noise Robustness/'
     models = config["models"]
     noise_rate = config["noise_rate"]
     passage_num = config["passage_num"]
@@ -40,12 +25,12 @@ def evaluate_noise_robustness(dataset, config):
     useddata = {}
 
     # Load existing results if file exists
-    if os.path.exists(filename):
+    '''if os.path.exists(filename):
         logging.info(f"Loading existing results from {filename}")
         with open(filename) as f:
             for line in f:
                 data = json.loads(line)
-                useddata[data['id']] = data
+                useddata[data['id']] = data'''
 
     results = []  # Store results for this model
 
@@ -54,10 +39,11 @@ def evaluate_noise_robustness(dataset, config):
         model = GroqClient(plm=config["model_name"])
     else:
         logging.warning(f"Skipping unknown model: {config["model_name"]}")
+        return
     
     # Iterate through dataset and process queries
     for idx, instance in enumerate(dataset[:num_queries], start=0):
-        logging.info(f"\nExecuting Query {idx + 1} for Model: {config["model_name"]}")
+        logging.info(f"Executing Query {idx + 1} for Model: {config["model_name"]}")
         query, ans, docs = process_data(instance, noise_rate, passage_num, "en_refine.json")
 
         # Retry mechanism for prediction
@@ -69,7 +55,7 @@ def evaluate_noise_robustness(dataset, config):
 
         # Check correctness and log the result
         is_correct = all(x == 1 for x in label)  # True if all values are 1 (correct), else False
-        logging.info(f"Model Response: {prediction}")
+        #logging.info(f"Model Response: {prediction}")
         logging.info(f"Correctness: {is_correct}")
 
         # Save result for this query
@@ -99,8 +85,7 @@ def evaluate_noise_robustness(dataset, config):
     tt = sum(1 for i in results if (noise_rate == 1 and i['label'][0] == -1) or (0 not in i['label'] and 1 in i['label']))
     all_rate = tt / len(results) if results else 0
 
-    logging.info(f"\n{config["model_name"]} - Noise Robustness Accuracy: {accuracy:.2%}")
-    logging.info(f"{config["model_name"]} - tt: {tt}, all_rate: {all_rate:.2%}")
+    
 
     # Save the final score file with tt and all_rate
     scores = {
@@ -112,6 +97,9 @@ def evaluate_noise_robustness(dataset, config):
         'all_rate': all_rate,
         'tt': tt
     }
+    logging.info(f"score: {scores}")
+    logging.info(f"Noise Robustness Accuracy: {accuracy:.2%}")
+    
     score_filename = os.path.join(result_path, f'scores_{config["model_name"]}_noise_{noise_rate}_passage_{passage_num}.json')
     with open(score_filename, 'w') as f:
         json.dump(scores, f, ensure_ascii=False, indent=4)

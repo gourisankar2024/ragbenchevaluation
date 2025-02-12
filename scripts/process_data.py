@@ -1,3 +1,4 @@
+import logging
 import random
 import math
 
@@ -8,7 +9,7 @@ def process_data(instance, noise_rate, passage_num, filename, correct_rate=0):
 
     neg_num = math.ceil(passage_num * noise_rate)
     pos_num = passage_num - neg_num
-    print(f"Using {pos_num} positive and {neg_num} negative documents for noise rate {noise_rate}")
+    logging.info(f"Using {pos_num} positive and {neg_num} negative documents for noise rate {noise_rate}")
 
     docs = []
     
@@ -16,7 +17,7 @@ def process_data(instance, noise_rate, passage_num, filename, correct_rate=0):
     if '_int' in filename:
         for i in instance['positive']:
             random.shuffle(i)
-        print(len(instance['positive']))
+        logging.info(len(instance['positive']))
         docs = [i[0] for i in instance['positive']]
         if len(docs) < pos_num:
             maxnum = max([len(i) for i in instance['positive']])
@@ -69,8 +70,8 @@ def process_data(instance, noise_rate, passage_num, filename, correct_rate=0):
     num_positive = sum(1 for doc in docs if doc in positive)
     num_negative = sum(1 for doc in docs if doc in negative)
 
-    print(f"Query: {query}")
-    print(f"Answer: {ans}")
-    print(f"Using {num_positive} positive and {num_negative} negative documents as context")
+    logging.info(f"Query: {query}")
+    logging.info(f"Answer: {ans}")
+    logging.info(f"Using {num_positive} positive and {num_negative} negative documents as context")
 
     return query, ans, docs
